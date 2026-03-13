@@ -1,0 +1,58 @@
+import {
+  BalanceTransaction,
+  CategoryExpenseSummary,
+} from "../types/transaction.types";
+import { getAmountSum } from "../utils/getSum";
+
+export class TransactionService {
+  constructor() {}
+  calculateBalance(transactions: BalanceTransaction[]): number {
+    return transactions.reduce((balance, { type, amount }) => {
+      const multiplier = type === "INCOME" ? 1 : -1;
+      return balance + amount * multiplier;
+    }, 0);
+  }
+  calculateCategoryPercentage(
+    transactions: BalanceTransaction[],
+    categoryId: number,
+  ): number {
+    if (!transactions.length) {
+      throw new Error("Transactions not provided");
+    }
+
+    const expenses: BalanceTransaction[] = [];
+    const categoryExpenses: BalanceTransaction[] = [];
+
+    transactions.forEach((expense) => {
+      if (expense.type === "EXPENSE") {
+        expenses.push(expense);
+      }
+      if (expense.type === "EXPENSE" && expense.categoryId === categoryId) {
+        categoryExpenses.push(expense);
+      }
+    });
+
+    if (!expenses.length) {
+      throw new Error("Expenses not found");
+    }
+
+    if (!categoryExpenses.length) {
+      throw new Error("Expenses category not found");
+    }
+
+    const expensesSum = getAmountSum(expenses);
+
+    const categorySum = getAmountSum(categoryExpenses);
+
+    const result = (categorySum / expensesSum) * 100;
+
+    return Number(result.toFixed(0));
+  }
+  async getMonthlyExpensesByCategory(
+    userId: number,
+    month: number,
+    year: number,
+  ): Promise<CategoryExpenseSummary[]> {
+    throw new Error("not implemeneted");
+  }
+}
