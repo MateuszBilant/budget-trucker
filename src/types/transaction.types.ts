@@ -17,3 +17,5 @@ export type BalanceTransaction = Pick<
 export type CategoryExpenseSummary = Pick<Transaction, "categoryId"> & {
   total: number;
 };
+
+export type CreateTransactionDto = Omit<Transaction, "id">;

@@ -5,14 +5,11 @@ const config: Config = {
   testEnvironment: "node",
   roots: ["<rootDir>/tests"],
   testMatch: ["**/*.test.ts"],
-  collectCoverageFrom: [
-    "src/**/*.ts",
-    "!src/**/*.d.ts",
-    "!src/index.ts", // entry point pomijamy
-  ],
+  collectCoverageFrom: ["src/**/*.ts", "!src/**/*.d.ts", "!src/index.ts"],
   coverageDirectory: "coverage",
-  verbose: true, // szczegółowe logi w terminalu
-  clearMocks: true, // czyści mocki między testami automatycznie
+  verbose: true,
+  clearMocks: true,
+  setupFiles: ["<rootDir>/tests/setup.ts"],
 };
 
 export default config;

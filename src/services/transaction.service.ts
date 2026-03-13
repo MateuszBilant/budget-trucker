@@ -1,18 +1,30 @@
+import { ICategoryRepository } from "../repositories/category.repository";
 import { ITransactionRepository } from "../repositories/transaction.repository";
+import { IUserRepository } from "../repositories/user.repository";
 import {
   BalanceTransaction,
   CategoryExpenseSummary,
+  CreateTransactionDto,
+  Transaction,
 } from "../types/transaction.types";
+import { Clock } from "../utils/clock";
 import { getAmountSum } from "../utils/getSum";
 
+export type TransactionServiceDependencies = {
+  transactionRepo: ITransactionRepository;
+  userRepo: IUserRepository;
+  categoryRepo: ICategoryRepository;
+  clock: Clock;
+};
 export class TransactionService {
-  constructor(private readonly transactionRepo: ITransactionRepository) {}
+  constructor(private readonly serviceDepo: TransactionServiceDependencies) {}
   calculateBalance(transactions: BalanceTransaction[]): number {
     return transactions.reduce((balance, { type, amount }) => {
       const multiplier = type === "INCOME" ? 1 : -1;
       return balance + amount * multiplier;
     }, 0);
   }
+
   calculateCategoryPercentage(
     transactions: BalanceTransaction[],
     categoryId: number,
@@ -55,11 +67,12 @@ export class TransactionService {
     month: number,
     year: number,
   ): Promise<CategoryExpenseSummary[]> {
-    const transactions = await this.transactionRepo.getMonthlyExpenses(
-      userId,
-      month,
-      year,
-    );
+    const transactions =
+      await this.serviceDepo.transactionRepo.getMonthlyExpenses(
+        userId,
+        month,
+        year,
+      );
 
     if (!transactions.length) {
       return [];
@@ -82,5 +95,34 @@ export class TransactionService {
         total: sum,
       };
     });
+  }
+
+  async createTransaction(data: CreateTransactionDto): Promise<Transaction> {
+    if (data.amount <= 0) {
+      throw new Error("Transaction amount has to be positive");
+    }
+
+    const nowTimestamp = this.serviceDepo.clock().getTime();
+    const transactionTimestamp = this.serviceDepo.clock(data.date).getTime();
+
+    if (transactionTimestamp > nowTimestamp) {
+      throw new Error("Transaction from the future");
+    }
+
+    const user = await this.serviceDepo.userRepo.getById(data.userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const category = await this.serviceDepo.categoryRepo.getById(
+      data.categoryId,
+    );
+
+    if (!category) {
+      throw new Error("Category not found");
+    }
+
+    return await this.serviceDepo.transactionRepo.create(data);
   }
 }
