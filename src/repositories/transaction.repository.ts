@@ -6,4 +6,9 @@ export interface ITransactionRepository {
     month: number,
     year: number,
   ): Promise<Transaction[]>;
+  getMonthlyTransactions(
+    userId: number,
+    month: number,
+    year: number,
+  ): Promise<Transaction[]>;
 }

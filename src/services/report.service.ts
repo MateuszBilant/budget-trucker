@@ -14,11 +14,15 @@ export class ReportService {
   ): Promise<MonthlyReport> {
     const budget = await this.budgetRepo.getBudget(userId, month, year);
 
-    const transactions = await this.transactionRepo.getMonthlyExpenses(
+    const transactions = await this.transactionRepo.getMonthlyTransactions(
       userId,
       month,
       year,
     );
+
+    if (!budget && !transactions.length) {
+      throw new Error("No data for this month");
+    }
 
     let totalIncome = 0;
     let totalExpenses = 0;
@@ -35,10 +39,7 @@ export class ReportService {
 
     const balance = totalIncome - totalExpenses;
     const budgetLimit = budget?.limit ?? null;
-    const budgetExceeded =
-      !budget || !(budgetLimit && budgetLimit - totalExpenses < 0)
-        ? false
-        : true;
+    const budgetExceeded = budget ? totalExpenses > budget.limit : false;
 
     return {
       totalIncome,

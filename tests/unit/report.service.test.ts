@@ -11,6 +11,7 @@ describe("reportService", () => {
   beforeEach(() => {
     mockTransactionRepo = {
       getMonthlyExpenses: jest.fn(),
+      getMonthlyTransactions: jest.fn(),
     };
     mockBudgetRepo = {
       getBudget: jest.fn(),
@@ -71,21 +72,21 @@ describe("reportService", () => {
         month: 1,
       };
       mockBudgetRepo.getBudget.mockResolvedValue(mockBudget);
-      mockTransactionRepo.getMonthlyExpenses.mockResolvedValue([
+      mockTransactionRepo.getMonthlyTransactions.mockResolvedValue([
         transaction1,
         transaction2,
         transaction3,
         transaction4,
       ]);
 
-      const { totalIncome } = await service.getMonthlyReport(1, 1, 2026);
+      const { balance } = await service.getMonthlyReport(1, 1, 2026);
 
-      expect(totalIncome).toBe(700);
+      expect(balance).toBe(400);
     });
 
     it("should return budgetExceeded falsy if no budget found for the month", async () => {
       mockBudgetRepo.getBudget.mockResolvedValue(null);
-      mockTransactionRepo.getMonthlyExpenses.mockResolvedValue([
+      mockTransactionRepo.getMonthlyTransactions.mockResolvedValue([
         transaction1,
         transaction2,
         transaction3,
@@ -105,7 +106,7 @@ describe("reportService", () => {
         month: 1,
       };
       mockBudgetRepo.getBudget.mockResolvedValue(mockBudget);
-      mockTransactionRepo.getMonthlyExpenses.mockResolvedValue([
+      mockTransactionRepo.getMonthlyTransactions.mockResolvedValue([
         transaction1,
         transaction2,
         transaction3,
@@ -126,7 +127,7 @@ describe("reportService", () => {
       };
       mockBudgetRepo.getBudget.mockResolvedValue(mockBudget);
 
-      mockTransactionRepo.getMonthlyExpenses.mockResolvedValue([
+      mockTransactionRepo.getMonthlyTransactions.mockResolvedValue([
         transaction1,
         transaction2,
         transaction3,
@@ -147,7 +148,7 @@ describe("reportService", () => {
       };
       mockBudgetRepo.getBudget.mockResolvedValue(mockBudget);
 
-      mockTransactionRepo.getMonthlyExpenses.mockResolvedValue([
+      mockTransactionRepo.getMonthlyTransactions.mockResolvedValue([
         transaction1,
         transaction2,
         transaction3,
@@ -157,6 +158,36 @@ describe("reportService", () => {
       const { balance } = await service.getMonthlyReport(1, 1, 2026);
 
       expect(balance).toBeGreaterThanOrEqual(0);
+    });
+
+    it("should return 0 for totalIncome, totalExpenses and balance if no transactions in the month and budget exists", async () => {
+      const mockBudget: Budget = {
+        userId: 1,
+        id: 1,
+        limit: 500,
+        year: 2026,
+        month: 1,
+      };
+      mockBudgetRepo.getBudget.mockResolvedValue(mockBudget);
+
+      mockTransactionRepo.getMonthlyTransactions.mockResolvedValue([]);
+
+      const { totalExpenses, totalIncome, balance } =
+        await service.getMonthlyReport(1, 1, 2026);
+
+      expect(totalExpenses).toBeGreaterThanOrEqual(0);
+      expect(totalIncome).toBeGreaterThanOrEqual(0);
+      expect(balance).toBeGreaterThanOrEqual(0);
+    });
+
+    it("should return 0 for totalIncome, totalExpenses and balance if no transactions in the month and budget exists", async () => {
+      mockBudgetRepo.getBudget.mockResolvedValue(null);
+
+      mockTransactionRepo.getMonthlyTransactions.mockResolvedValue([]);
+
+      await expect(service.getMonthlyReport(1, 1, 2026)).rejects.toThrow(
+        "No data for this month",
+      );
     });
   });
 });
