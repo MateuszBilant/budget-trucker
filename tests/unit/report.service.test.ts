@@ -175,9 +175,9 @@ describe("reportService", () => {
       const { totalExpenses, totalIncome, balance } =
         await service.getMonthlyReport(1, 1, 2026);
 
-      expect(totalExpenses).toBeGreaterThanOrEqual(0);
-      expect(totalIncome).toBeGreaterThanOrEqual(0);
-      expect(balance).toBeGreaterThanOrEqual(0);
+      expect(totalExpenses).toBe(0);
+      expect(totalIncome).toBe(0);
+      expect(balance).toBe(0);
     });
 
     it("should throw if no budget and no transactions", async () => {
