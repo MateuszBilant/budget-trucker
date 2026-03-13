@@ -180,7 +180,7 @@ describe("reportService", () => {
       expect(balance).toBeGreaterThanOrEqual(0);
     });
 
-    it("should return 0 for totalIncome, totalExpenses and balance if no transactions in the month and budget exists", async () => {
+    it("should throw if no budget and no transactions", async () => {
       mockBudgetRepo.getBudget.mockResolvedValue(null);
 
       mockTransactionRepo.getMonthlyTransactions.mockResolvedValue([]);
