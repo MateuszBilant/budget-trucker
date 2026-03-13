@@ -12,6 +12,7 @@ describe("TransactionService", () => {
   beforeEach(() => {
     mockTransactionRepo = {
       getMonthlyExpenses: jest.fn(),
+      getMonthlyTransactions: jest.fn(),
     };
     service = new TransactionService(mockTransactionRepo);
   });
