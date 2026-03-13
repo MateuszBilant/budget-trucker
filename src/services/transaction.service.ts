@@ -1,3 +1,4 @@
+import { ITransactionRepository } from "../repositories/transaction.repository";
 import {
   BalanceTransaction,
   CategoryExpenseSummary,
@@ -5,7 +6,7 @@ import {
 import { getAmountSum } from "../utils/getSum";
 
 export class TransactionService {
-  constructor() {}
+  constructor(private readonly transactionRepo: ITransactionRepository) {}
   calculateBalance(transactions: BalanceTransaction[]): number {
     return transactions.reduce((balance, { type, amount }) => {
       const multiplier = type === "INCOME" ? 1 : -1;
@@ -48,11 +49,38 @@ export class TransactionService {
 
     return Number(result.toFixed(0));
   }
+
   async getMonthlyExpensesByCategory(
     userId: number,
     month: number,
     year: number,
   ): Promise<CategoryExpenseSummary[]> {
-    throw new Error("not implemeneted");
+    const transactions = await this.transactionRepo.getMonthlyExpenses(
+      userId,
+      month,
+      year,
+    );
+
+    if (!transactions.length) {
+      return [];
+    }
+
+    const sortedExpenses: Record<number, number> = {};
+
+    transactions.forEach(({ categoryId, amount }) => {
+      if (sortedExpenses[categoryId]) {
+        sortedExpenses[categoryId] += amount;
+        return;
+      }
+
+      sortedExpenses[categoryId] = amount;
+    });
+
+    return Object.entries(sortedExpenses).map(([categoryId, sum]) => {
+      return {
+        categoryId: Number(categoryId),
+        total: sum,
+      };
+    });
   }
 }
