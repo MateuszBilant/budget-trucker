@@ -12,6 +12,7 @@ describe("budgetService", () => {
 
   beforeEach(() => {
     mockTransactionRepo = {
+      create: jest.fn(),
       getMonthlyExpenses: jest.fn(),
       getMonthlyTransactions: jest.fn(),
     };

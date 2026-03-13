@@ -10,6 +10,7 @@ describe("reportService", () => {
   let service: ReportService;
   beforeEach(() => {
     mockTransactionRepo = {
+      create: jest.fn(),
       getMonthlyExpenses: jest.fn(),
       getMonthlyTransactions: jest.fn(),
     };

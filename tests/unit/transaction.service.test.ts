@@ -1,20 +1,40 @@
 import { ITransactionRepository } from "../../src/repositories/transaction.repository";
+import { IUserRepository } from "../../src/repositories/user.repository";
+import { ICategoryRepository } from "../../src/repositories/category.repository";
 import { TransactionService } from "../../src/services/transaction.service";
 import {
   BalanceTransaction,
+  CreateTransactionDto,
   Transaction,
 } from "../../src/types/transaction.types";
+import { User } from "../../src/types/user.types";
+import { Category } from "../../src/types/category.types";
 
 describe("TransactionService", () => {
   let mockTransactionRepo: jest.Mocked<ITransactionRepository>;
+  let mockUserRepo: jest.Mocked<IUserRepository>;
+  let mockCategoryRepo: jest.Mocked<ICategoryRepository>;
   let service: TransactionService;
-
+  let FIXED_DATE: Date;
   beforeEach(() => {
     mockTransactionRepo = {
+      create: jest.fn(),
       getMonthlyExpenses: jest.fn(),
       getMonthlyTransactions: jest.fn(),
     };
-    service = new TransactionService(mockTransactionRepo);
+    mockUserRepo = {
+      getById: jest.fn(),
+    };
+    mockCategoryRepo = {
+      getById: jest.fn(),
+    };
+    FIXED_DATE = new Date("2026-03-13T10:00:00Z");
+    service = new TransactionService({
+      transactionRepo: mockTransactionRepo,
+      userRepo: mockUserRepo,
+      categoryRepo: mockCategoryRepo,
+      clock: (time?: string | Date) => (time ? new Date(time) : FIXED_DATE),
+    });
   });
 
   describe("calculateBalance", () => {
@@ -203,6 +223,123 @@ describe("TransactionService", () => {
       const result = await service.getMonthlyExpensesByCategory(1, 1, 2026);
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe("createTransaction", () => {
+    const user: User = {
+      id: 1,
+      name: "Name",
+      email: "test@email.com",
+      createdAt: new Date(2026, 1, 1, 12, 0, 0, 0).toISOString(),
+      updatedAt: new Date(2026, 1, 1, 12, 0, 0, 0).toISOString(),
+    };
+
+    const category: Category = {
+      id: 1,
+      name: "Test",
+    };
+
+    const transaction: Transaction = {
+      id: 1,
+      amount: 100,
+      type: "EXPENSE",
+      userId: 1,
+      categoryId: 1,
+      date: new Date(2026, 1, 12, 14, 30, 0),
+    };
+
+    it("should return created transaction with id", async () => {
+      mockUserRepo.getById.mockResolvedValue(user);
+      mockCategoryRepo.getById.mockResolvedValue(category);
+      mockTransactionRepo.create.mockResolvedValue(transaction);
+
+      const newTransaction: CreateTransactionDto = {
+        amount: 100,
+        type: "EXPENSE",
+        userId: 1,
+        categoryId: 1,
+        date: new Date(2026, 1, 12, 14, 30, 0),
+      };
+
+      const result = await service.createTransaction(newTransaction);
+
+      expect(result.id).toBe(1);
+    });
+
+    it("should throw if transaction date from future", async () => {
+      mockUserRepo.getById.mockResolvedValue(user);
+      mockCategoryRepo.getById.mockResolvedValue(category);
+
+      const newTransaction: CreateTransactionDto = {
+        amount: 100,
+        type: "EXPENSE",
+        userId: 1,
+        categoryId: 1,
+        date: new Date(2027, 1, 12, 14, 30, 0),
+      };
+
+      await expect(service.createTransaction(newTransaction)).rejects.toThrow(
+        "Transaction from the future",
+      );
+    });
+
+    it("should throw if transaction's amount is equal or less than 0", async () => {
+      mockUserRepo.getById.mockResolvedValue(user);
+      mockCategoryRepo.getById.mockResolvedValue(category);
+
+      const newTransaction: CreateTransactionDto = {
+        amount: 0,
+        type: "EXPENSE",
+        userId: 1,
+        categoryId: 1,
+        date: new Date(2026, 1, 12, 14, 30, 0),
+      };
+      const newTransaction2: CreateTransactionDto = {
+        amount: -10,
+        type: "EXPENSE",
+        userId: 1,
+        categoryId: 1,
+        date: new Date(2026, 1, 12, 14, 30, 0),
+      };
+
+      await expect(service.createTransaction(newTransaction)).rejects.toThrow(
+        "Transaction amount has to be positive",
+      );
+      await expect(service.createTransaction(newTransaction2)).rejects.toThrow(
+        "Transaction amount has to be positive",
+      );
+    });
+    it("should throw if user does not exists", async () => {
+      mockUserRepo.getById.mockResolvedValue(null);
+
+      const newTransaction: CreateTransactionDto = {
+        amount: 10,
+        type: "EXPENSE",
+        userId: 1,
+        categoryId: 1,
+        date: new Date(2026, 1, 12, 14, 30, 0),
+      };
+
+      await expect(service.createTransaction(newTransaction)).rejects.toThrow(
+        "User not found",
+      );
+    });
+
+    it("should throw if category does not exists", async () => {
+      mockUserRepo.getById.mockResolvedValue(user);
+      mockCategoryRepo.getById.mockResolvedValue(null);
+      const newTransaction: CreateTransactionDto = {
+        amount: 10,
+        type: "EXPENSE",
+        userId: 1,
+        categoryId: 1,
+        date: new Date(2026, 1, 12, 14, 30, 0),
+      };
+
+      await expect(service.createTransaction(newTransaction)).rejects.toThrow(
+        "Category not found",
+      );
     });
   });
 });
